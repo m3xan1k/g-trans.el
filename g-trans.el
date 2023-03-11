@@ -1,6 +1,6 @@
 (require 'request)
 
-(setq g-trans/base-url "https://translate.googleapis.com/translate_a/single")
+(setq g-trans-base-url "https://translate.googleapis.com/translate_a/single")
 
 (defun g-trans-translate (query &optional source-lang target-lang)
   (when (not (boundp 'g-trans-default-source-lang))

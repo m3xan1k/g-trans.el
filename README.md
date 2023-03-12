@@ -1,18 +1,13 @@
 # g-trans.el
 google translate inside your emacs
 
-```
-           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-                   Version 2, December 2004
- 
-Copyright (C) 2023 m3xan1k <m3xan1k@duck.com>
+Dependencies: request 0.3.3
 
-Everyone is permitted to copy and distribute verbatim or modified
-copies of this license document, and changing it is allowed as long
-as the name is changed.
- 
-           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+`M-x g-trans-translate`
 
- 0. You just DO WHAT THE FUCK YOU WANT TO.
-```
+You can set default source/target languages
+by adding
+`(setq g-trans-default-source-lang "<language_code>")`
+and
+`(setq g-trans-default-target-lang "<language_code>")`
+to your `init.el`

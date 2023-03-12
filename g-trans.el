@@ -1,4 +1,4 @@
-;;; g-trans.el — google translate inside emacs
+;;; g-trans.el --- google translate inside Emacs
 
 ;; Copyright (C) 2023 by Sergey Shevtsov
 
@@ -24,47 +24,37 @@
 ;; along with request.el.
 ;; If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+
+;; Google translate inside Emacs
+
+;;; Code:
+
 (require 'request)
 
 ;; Magic URL
 (defconst g-trans-base-url "https://translate.googleapis.com/translate_a/single")
 
-;; Main function
-;; ---------------------------------------------------------------
-(defun g-trans-translate (query &optional source-lang target-lang)
-  "Translates given query from source-lang to target-lang.
-If source-lang/target-lang not provided, then
-g-trans-default-source-lang/g-trans-default-target-lang
-global settings are used, if they are not provieded either,
-then default values are ru/en."
-  (when (not (boundp 'g-trans-default-source-lang))
-    (setq g-trans-default-source-lang "ru"))
-  (when (not (boundp 'g-trans-default-target-lang))
-    (setq g-trans-default-target-lang "en"))
-  (interactive (list
-                 (read-from-minibuffer "Query: ")
-                 (read-from-minibuffer
-                   (format "Source lang[%s]: " g-trans-default-source-lang))
-                 (read-from-minibuffer
-                   (format "Target lang[%s]: " g-trans-default-target-lang))))
-  (when (string= source-lang "")
-    (set 'source-lang g-trans-default-source-lang))
-  (when (string= target-lang "")
-    (set 'target-lang g-trans-default-target-lang))
-  (g-trans--make-request query source-lang target-lang))
+(defvar g-trans-default-source-lang "ru")
+(defvar g-trans-default-target-lang "en")
 
 ;; Request to google
 ;; ---------------------------------------------------------
 (defun g-trans--make-request (query source-lang target-lang)
   "Make request to googleapi.
-client=gtx and dt=t are necessary 'magic' params"
+QUERY - string - word or phrase to translate.
+SOURCE-LANG - string - source language code
+like 'en' for english or 'es' for spanish.
+TARGET-LANG - string - target language code.
+There's no official documentation about which
+languages are available."
   (request
     g-trans-base-url
     :params `(("sl" . ,source-lang)
-              ("tl" . ,target-lang)
-              ("q" . ,query)
-              ("client" . "gtx")
-              ("dt" . "t"))
+               ("tl" . ,target-lang)
+               ("q" . ,query)
+               ("client" . "gtx")
+               ("dt" . "t"))
     :parser 'json-read
     :success (cl-function
                (lambda (&key data &allow-other-keys)
@@ -73,7 +63,8 @@ client=gtx and dt=t are necessary 'magic' params"
 ;; Parse json response
 ;; ----------------------------------------
 (defun g-trans--get-translate-result (data)
-  "There is no documentation.
+  "DATA - json response from googleapi.
+There is no documentation.
 But successful json-response from googleapi looks smth like
 [[[translated_result, ...]]]
 so just recursively get this result"
@@ -82,6 +73,34 @@ so just recursively get this result"
     (if (stringp data)
       data
       (g-trans--get-translate-result (aref data 0)))))
+
+;; Main function
+;; ---------------------------------------------------------------
+(defun g-trans-translate (query &optional source-lang target-lang)
+  "Translates given query from source-lang to target-lang.
+QUERY - string - word or phrase to translate.
+SOURCE-LANG - string - source language code
+like 'en' for english or 'es' for spanish.
+TARGET-LANG - string - target language code.
+
+There's no official documentation about which
+languages are available.
+
+If source-lang/target-lang not provided,
+then global defaults are used."
+  (interactive (list
+                 (read-from-minibuffer "Query: ")
+                 (read-from-minibuffer
+                   (format "Source lang[%s]: " g-trans-default-source-lang))
+                 (read-from-minibuffer
+                   (format "Target lang[%s]: " g-trans-default-target-lang))))
+  (let ((source-lang (if (string= source-lang "")
+                       g-trans-default-source-lang
+                       source-lang))
+         (target-lang (if (string= target-lang "")
+                        g-trans-default-target-lang
+                        target-lang)))
+    (g-trans--make-request query source-lang target-lang)))
 
 (provide 'g-trans)
 ;;; g-trans.el ends here

@@ -4,7 +4,7 @@
 
 ;; Author: Sergey Shevtsov <m3xan1k at duck.com>
 ;; Keywords: translation, dictionary
-;; Version: 0.1
+;; Version: 0.2
 
 ;; Package-Requires: ((emacs "27.1") (request "0.3.3"))
 

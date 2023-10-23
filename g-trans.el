@@ -30,77 +30,44 @@
 
 ;;; Code:
 
-(require 'request)
+(require 'url)
+(require 'json)
+(require 'cl-lib)
 
-;; Magic URL
-(defconst g-trans-base-url "https://translate.googleapis.com/translate_a/single")
+(defconst g-trans--base-url "https://translate.googleapis.com/translate_a/single")
 
-(defvar g-trans-default-source-lang "ru")
-(defvar g-trans-default-target-lang "en")
+(defun g-trans--params->query-string (params)
+  (concat "?" (mapconcat
+               (lambda (pair)
+                 (format "%s=%s" (car pair) (url-hexify-string (cdr pair))))
+               params
+               "&")))
 
-;; Request to google
-;; ---------------------------------------------------------
-(defun g-trans--make-request (query source-lang target-lang)
-  "Make request to googleapi.
-QUERY - string - word or phrase to translate.
-SOURCE-LANG - string - source language code
-like 'en' for english or 'es' for spanish.
-TARGET-LANG - string - target language code.
-There's no official documentation about which
-languages are available."
-  (request
-    g-trans-base-url
-    :params `(("sl" . ,source-lang)
-               ("tl" . ,target-lang)
-               ("q" . ,query)
-               ("client" . "gtx")
-               ("dt" . "t"))
-    :parser 'json-read
-    :success (cl-function
-               (lambda (&key data &allow-other-keys)
-                 (message (format "%s" (g-trans--get-translate-result data)))))))
+;; (cl-assert (string=
+;;             (g-trans--params->query-string '((a . "1") (b . "2") (c . "3")))
+;;             "?a=1&b=2&c=3"))
 
-;; Parse json response
-;; ----------------------------------------
+(defun g-trans--send-request (query)
+  (let* ((url-request-method "GET")
+         (params `((sl . "en")
+                   (tl . "ru")
+		   (client . "gtx")
+		   (dt . "t")
+		   (q . ,query)))
+         (url (concat g-trans--base-url
+                      (g-trans--params->query-string params))))
+    (with-current-buffer (url-retrieve-synchronously url)
+      (set-buffer-multibyte t)
+      (goto-char url-http-end-of-headers)
+      (let ((data (json-read)))
+	(kill-buffer)
+	data))))
+
 (defun g-trans--get-translate-result (data)
-  "DATA - json response from googleapi.
-There is no documentation.
-But successful json-response from googleapi looks smth like
-[[[translated_result, ...]]]
-so just recursively get this result"
-  (if (not (list data))
-    "No results"
-    (if (stringp data)
+  (when (not (list data)) "No results")
+  (if (stringp data)
       data
-      (g-trans--get-translate-result (aref data 0)))))
-
-;; Main function
-;; ---------------------------------------------------------------
-(defun g-trans-translate (query &optional source-lang target-lang)
-  "Translates given query from source-lang to target-lang.
-QUERY - string - word or phrase to translate.
-SOURCE-LANG - string - source language code
-like 'en' for english or 'es' for spanish.
-TARGET-LANG - string - target language code.
-
-There's no official documentation about which
-languages are available.
-
-If source-lang/target-lang not provided,
-then global defaults are used."
-  (interactive (list
-                 (read-from-minibuffer "Query: ")
-                 (read-from-minibuffer
-                   (format "Source lang[%s]: " g-trans-default-source-lang))
-                 (read-from-minibuffer
-                   (format "Target lang[%s]: " g-trans-default-target-lang))))
-  (let ((source-lang (if (string= source-lang "")
-                       g-trans-default-source-lang
-                       source-lang))
-         (target-lang (if (string= target-lang "")
-                        g-trans-default-target-lang
-                        target-lang)))
-    (g-trans--make-request query source-lang target-lang)))
+      (g-trans--get-translate-result (aref data 0))))
 
 (provide 'g-trans)
 ;;; g-trans.el ends here

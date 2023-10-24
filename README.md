@@ -5,7 +5,7 @@ google translate inside your emacs
 
 ## Installation
 
-`(require 'g-trans)
+`(require 'g-trans)`
 
 ## Commands
 `M-x g-trans-translate`
